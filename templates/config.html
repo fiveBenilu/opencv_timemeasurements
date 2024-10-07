@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfiguration - RC Auto Rennen Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #content {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        #config-container {
+            flex-basis: 60%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar {
+            background-color: white; /* Set the background color of the navbar to white */
+            color: #007bff; /* Set the text color */
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+        }
+        .navbar img {
+            height: 70px; /* Adjust the height as needed */
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b; /* Set the text color */
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+    </div>
+    
+    <div id="content">
+        <div id="config-container">
+            <h2>Konfiguration</h2>
+            <form id="config-form">
+                <label for="inactiveLimit">Inaktivitätsgrenze (Sekunden):</label>
+                <input type="number" id="inactiveLimit" name="inactiveLimit" min="1" required>
+
+                <label for="alpha">Kontrast (1.0-3.0):</label>
+                <input type="number" id="alpha" name="alpha" step="0.1" min="1.0" max="3.0" required>
+
+                <label for="beta">Helligkeit (0-100):</label>
+                <input type="number" id="beta" name="beta" min="0" max="100" required>
+
+                <label for="saturation">Sättigung (0-100):</label>
+                <input type="number" id="saturation" name="saturation" min="0" max="100" required>
+
+                <button type="submit">Speichern</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('config-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const inactiveLimit = document.getElementById('inactiveLimit').value;
+            const alpha = document.getElementById('alpha').value;
+            const beta = document.getElementById('beta').value;
+            const saturation = document.getElementById('saturation').value;
+            fetch('/save_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ inactiveLimit: inactiveLimit, alpha: alpha, beta: beta, saturation: saturation })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Einstellungen gespeichert!');
+                } else {
+                    alert('Fehler beim Speichern der Einstellungen.');
+                }
+            });
+        });
+
+        // Lade aktuelle Einstellungen
+        fetch('/get_config')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('inactiveLimit').value = data.inactiveLimit;
+                document.getElementById('alpha').value = data.alpha;
+                document.getElementById('beta').value = data.beta;
+                document.getElementById('saturation').value = data.saturation;
+            });
+    </script>
+</body>
+</html>

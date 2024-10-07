@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC Auto Rennen Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #content {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        #video-container {
+            flex-basis: 60%;
+            text-align: center;
+            padding-right: 20px;
+        }
+        #video-container img {
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        #controls {
+            margin-top: 15px;
+        }
+        #controls form {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        #controls button {
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #controls button:hover {
+            background-color: #218838;
+        }
+        #times-container {
+            flex-basis: 35%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .table-wrapper {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .inactive {
+            color: #dc3545;
+        }
+        .active {
+            color: #28a745;
+        }
+        .navbar {
+            background-color: white; /* Set the background color of the navbar to white */
+            color: #007bff; /* Set the text color */
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+        }
+        .navbar img {
+            height: 70px; /* Adjust the height as needed */
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b; /* Set the text color */
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+    </div>
+    
+    <div id="content">
+        <div id="video-container">
+            <img src="{{ url_for('video_feed') }}" width="640" height="480">
+            <div id="controls">
+                <form action="{{ url_for('start_stream') }}">
+                    <button type="submit">Stream Starten</button>
+                </form>
+                <form action="{{ url_for('stop_stream') }}">
+                    <button type="submit" style="background-color: #dc3545;">Stream Stoppen</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="times-container">
+            <div class="table-wrapper">
+                <h2>Letzte Rundenzeiten</h2>
+                <table id="times-table">
+                    <thead>
+                        <tr>
+                            <th>Auto</th>
+                            <th>Letzte Runde (Sekunden)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamische Zeilen für Rundenzeiten -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-wrapper">
+                <h2>Aktive Fahrzeuge auf der Strecke</h2>
+                <table id="active-vehicles-table">
+                    <thead>
+                        <tr>
+                            <th>Auto</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamische Zeilen für aktive Fahrzeuge -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inactiveLimit = 10; // Standardwert für Inaktivitätsgrenze
+
+        // Lade aktuelle Einstellungen
+        fetch('/get_config')
+            .then(response => response.json())
+            .then(data => {
+                inactiveLimit = data.inactiveLimit;
+            });
+
+        function updateRundenzeiten() {
+            fetch('/rundenzeiten')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#times-table tbody');
+                    tbody.innerHTML = '';  // Leere die Tabelle
+                    for (const [auto, info] of Object.entries(data)) {
+                        const letzteRunde = info.letzte_runde ? info.letzte_runde.toFixed(2) : 'N/A';
+                        const row = `<tr><td>${auto}</td><td>${letzteRunde}</td></tr>`;
+                        tbody.innerHTML += row;
+                    }
+                });
+        }
+
+        function updateActiveVehicles() {
+            fetch('/rundenzeiten')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#active-vehicles-table tbody');
+                    tbody.innerHTML = '';  // Leere die Tabelle
+
+                    for (const [auto, info] of Object.entries(data)) {
+                        const status = info.inaktiv_zeit > inactiveLimit ? 'Inaktiv' : 'Aktiv';
+                        const statusClass = info.inaktiv_zeit > inactiveLimit ? 'inactive' : 'active';
+                        const row = `<tr><td>${auto}</td><td class="${statusClass}">${status}</td></tr>`;
+                        tbody.innerHTML += row;
+                    }
+                });
+        }
+
+        // Alle 2 Sekunden die Tabellen aktualisieren
+        setInterval(updateRundenzeiten, 1000);
+        setInterval(updateActiveVehicles, 1000);
+    </script>
+</body>
+</html>
