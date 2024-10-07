@@ -58,7 +58,7 @@
         label {
             margin-top: 10px;
         }
-        input[type="number"] {
+        input[type="number"], input[type="text"], input[type="color"] {
             padding: 10px;
             font-size: 16px;
             margin-top: 5px;
@@ -77,6 +77,25 @@
         }
         button:hover {
             background-color: #0056b3;
+        }
+        .car-color-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .car-color-container input[type="text"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .car-color-container input[type="color"] {
+            width: 50px;
+            height: 50px;
+            border: none;
+            cursor: pointer;
+        }
+        .car-color-container button {
+            background-color: #dc3545;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -104,6 +123,12 @@
                 <label for="saturation">Sättigung (0-100):</label>
                 <input type="number" id="saturation" name="saturation" min="0" max="100" required>
 
+                <h3>Auto-Farben</h3>
+                <div id="car-colors">
+                    <!-- Dynamische Farbauswahl -->
+                </div>
+                <button type="button" id="add-car-color">Auto hinzufügen</button>
+
                 <button type="submit">Speichern</button>
             </form>
         </div>
@@ -116,12 +141,18 @@
             const alpha = document.getElementById('alpha').value;
             const beta = document.getElementById('beta').value;
             const saturation = document.getElementById('saturation').value;
+            const carColors = Array.from(document.querySelectorAll('.car-color-container')).map(container => {
+                return {
+                    name: container.querySelector('input[type="text"]').value,
+                    color: container.querySelector('input[type="color"]').value
+                };
+            });
             fetch('/save_config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ inactiveLimit: inactiveLimit, alpha: alpha, beta: beta, saturation: saturation })
+                body: JSON.stringify({ inactiveLimit: inactiveLimit, alpha: alpha, beta: beta, saturation: saturation, carColors: carColors })
             })
             .then(response => response.json())
             .then(data => {
@@ -133,6 +164,17 @@
             });
         });
 
+        document.getElementById('add-car-color').addEventListener('click', function() {
+            const container = document.createElement('div');
+            container.className = 'car-color-container';
+            container.innerHTML = `
+                <input type="text" placeholder="Auto Name" required>
+                <input type="color" required>
+                <button type="button" onclick="this.parentElement.remove()">Entfernen</button>
+            `;
+            document.getElementById('car-colors').appendChild(container);
+        });
+
         // Lade aktuelle Einstellungen
         fetch('/get_config')
             .then(response => response.json())
@@ -141,6 +183,16 @@
                 document.getElementById('alpha').value = data.alpha;
                 document.getElementById('beta').value = data.beta;
                 document.getElementById('saturation').value = data.saturation;
+                data.carColors.forEach(car => {
+                    const container = document.createElement('div');
+                    container.className = 'car-color-container';
+                    container.innerHTML = `
+                        <input type="text" value="${car.name}" required>
+                        <input type="color" value="${car.color}" required>
+                        <button type="button" onclick="this.parentElement.remove()">Entfernen</button>
+                    `;
+                    document.getElementById('car-colors').appendChild(container);
+                });
             });
     </script>
 </body>

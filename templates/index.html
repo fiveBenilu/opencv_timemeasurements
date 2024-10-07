@@ -114,7 +114,7 @@
     
     <div id="content">
         <div id="video-container">
-            <img src="{{ url_for('video_feed') }}" width="640" height="480">
+            <img id="video-feed" src="{{ url_for('video_feed') }}" width="640" height="480" onclick="pickColor(event)">
             <div id="controls">
                 <form action="{{ url_for('start_stream') }}">
                     <button type="submit">Stream Starten</button>
@@ -168,6 +168,37 @@
                 inactiveLimit = data.inactiveLimit;
             });
 
+        function pickColor(event) {
+            const img = document.getElementById('video-feed');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0, img.width, img.height);
+            const x = event.offsetX;
+            const y = event.offsetY;
+            const pixel = context.getImageData(x, y, 1, 1).data;
+            const rgb = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+            alert(`Farbe ausgewählt: ${rgb}`);
+            
+            // Sende den RGB-Wert an den Server, um ein neues Auto anzulegen
+            fetch('/add_car', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ color: rgb })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Neues Auto wurde erfolgreich hinzugefügt!');
+                } else {
+                    alert('Fehler beim Hinzufügen des neuen Autos.');
+                }
+            });
+        }
+
         function updateRundenzeiten() {
             fetch('/rundenzeiten')
                 .then(response => response.json())
@@ -199,8 +230,8 @@
         }
 
         // Alle 2 Sekunden die Tabellen aktualisieren
-        setInterval(updateRundenzeiten, 1000);
-        setInterval(updateActiveVehicles, 1000);
+        setInterval(updateRundenzeiten, 2000);
+        setInterval(updateActiveVehicles, 2000);
     </script>
 </body>
 </html>

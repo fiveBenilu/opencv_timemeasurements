@@ -3,6 +3,7 @@ import cv2
 import time
 import threading
 import numpy as np
+import re
 
 app = Flask(__name__)
 
@@ -11,13 +12,19 @@ streaming = False
 lock = threading.Lock()
 
 # Kamera einrichten
-camera = cv2.VideoCapture(1)  # Stelle sicher, dass die richtige Kamera verwendet wird
+camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwendet wird
 
-# Auto-Farben (HSV und BGR)
-farbdefinitionen = {
-    'blaues_auto': ([90, 100, 50], [130, 255, 255], (255, 0, 0)),
-    'rotes_auto': ([0, 100, 50], [10, 255, 255], (0, 0, 255)),
-    'grünes_auto': ([40, 100, 50], [80, 255, 255], (0, 255, 0))
+# Konfigurationsvariablen
+config = {
+    'inactiveLimit': 10,  # Standardwert für Inaktivitätsgrenze
+    'alpha': 1.3,         # Standardwert für Kontrast
+    'beta': 40,           # Standardwert für Helligkeit
+    'saturation': 50,     # Standardwert für Sättigung
+    'carColors': [
+        {'name': 'blaues_auto', 'color': '#0000FF'},
+        {'name': 'rotes_auto', 'color': '#FF0000'},
+        {'name': 'grünes_auto', 'color': '#00FF00'}
+    ]
 }
 
 # Rundenzeiten und Delays
@@ -30,14 +37,6 @@ boundary_box = (500, 0, 150, 1080)  # (x, y, width, height)
 
 # Überwachung, ob das Auto bereits in der Boundary Box ist
 autos_in_boundary = {}
-
-# Konfigurationsvariablen
-config = {
-    'inactiveLimit': 10,  # Standardwert für Inaktivitätsgrenze
-    'alpha': 1.3,         # Standardwert für Kontrast
-    'beta': 40,           # Standardwert für Helligkeit
-    'saturation': 50      # Standardwert für Sättigung
-}
 
 # Funktion zur Erfassung der Rundenzeit
 def rundenzeit_erfassen(auto_id):
@@ -73,6 +72,21 @@ def adjust_image(image):
 
     return result
 
+# Funktion zur Umwandlung von Hex-Farbe zu HSV
+def hex_to_hsv(hex_color):
+    hex_color = hex_color.lstrip('#')
+    rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    hsv = cv2.cvtColor(np.uint8([[rgb]]), cv2.COLOR_RGB2HSV)[0][0]
+    return hsv
+
+# Funktion zur Umwandlung von RGB zu Hex
+def rgb_to_hex(rgb_color):
+    match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', rgb_color)
+    if match:
+        r, g, b = map(int, match.groups())
+        return f'#{r:02x}{g:02x}{b:02x}'
+    return None
+
 # Funktion für den Videostream mit Rundenzeiterfassung
 def gen_frames():
     global streaming
@@ -95,9 +109,11 @@ def gen_frames():
         x, y, w, h = boundary_box
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 5)
 
-        for auto_id, (lower, upper, box_color) in farbdefinitionen.items():
-            lower_color = tuple(lower)
-            upper_color = tuple(upper)
+        for car in config['carColors']:
+            auto_id = car['name']
+            hsv_color = hex_to_hsv(car['color'])
+            lower_color = np.array([hsv_color[0] - 10, 100, 100])
+            upper_color = np.array([hsv_color[0] + 10, 255, 255])
             mask = cv2.inRange(hsv, lower_color, upper_color)
 
             contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -107,8 +123,8 @@ def gen_frames():
                     cx, cy, cw, ch = cv2.boundingRect(contour)
 
                     # Auto-Box zeichnen
-                    cv2.rectangle(frame, (cx, cy), (cx + cw, cy + ch), box_color, 2)
-                    cv2.putText(frame, auto_id, (cx, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, box_color, 2)
+                    cv2.rectangle(frame, (cx, cy), (cx + cw, cy + ch), tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5)), 2)
+                    cv2.putText(frame, auto_id, (cx, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5)), 2)
 
                     # Überprüfung, ob das Auto in die senkrechte Boundary Box kommt
                     if x < cx < x + w and y < cy < y + h and auto_id not in autos_in_boundary:
@@ -133,7 +149,7 @@ def gen_frames():
 # Routen für Flask
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', config=config)
 
 @app.route('/start')
 def start_stream():
@@ -160,13 +176,15 @@ def video_feed():
 def get_rundenzeiten():
     zeiten = {}
     aktuelle_zeit = time.time()
+    inactive_limit = config['inactiveLimit']
     with lock:
         for auto_id, letzte_rundenzeit in rundenzeiten.items():
             letzte_erfassungszeit = letzte_erfassung.get(auto_id, aktuelle_zeit)
             inaktiv_zeit = aktuelle_zeit - letzte_erfassungszeit
             zeiten[auto_id] = {
                 'letzte_runde': letzte_rundenzeit,
-                'inaktiv_zeit': inaktiv_zeit
+                'inaktiv_zeit': inaktiv_zeit,
+                'status': 'Inaktiv' if inaktiv_zeit > inactive_limit else 'Aktiv'
             }
     return jsonify(zeiten)
 
@@ -185,7 +203,23 @@ def save_config():
     config['alpha'] = float(data.get('alpha', 1.3))
     config['beta'] = int(data.get('beta', 40))
     config['saturation'] = int(data.get('saturation', 50))
+    config['carColors'] = data.get('carColors', [])
     return jsonify(success=True)
+
+@app.route('/add_car', methods=['POST'])
+def add_car():
+    data = request.get_json()
+    color = data.get('color')
+    if color and color.startswith('rgb'):
+        color = rgb_to_hex(color)
+    if color and color.startswith('#') and len(color) == 7:
+        new_car = {
+            'name': f'auto_{len(config["carColors"]) + 1}',
+            'color': color
+        }
+        config['carColors'].append(new_car)
+        return jsonify(success=True, color=color)
+    return jsonify(success=False), 400
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80, debug=False)
