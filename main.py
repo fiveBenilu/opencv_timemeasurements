@@ -19,11 +19,9 @@ config = {
     'inactiveLimit': 10,  # Standardwert für Inaktivitätsgrenze
     'alpha': 1.3,         # Standardwert für Kontrast
     'beta': 40,           # Standardwert für Helligkeit
-    'saturation': 50,     # Standardwert für Sättigung
+    'saturation': 90,     # Standardwert für Sättigung
     'carColors': [
-        {'name': 'blaues_auto', 'color': '#0000FF'},
-        {'name': 'rotes_auto', 'color': '#FF0000'},
-        {'name': 'grünes_auto', 'color': '#00FF00'}
+        {'name': 'test', 'color': '#00FF00'}
     ]
 }
 
