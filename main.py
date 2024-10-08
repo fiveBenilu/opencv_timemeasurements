@@ -5,8 +5,31 @@ import threading
 import numpy as np
 import re
 import json
+import os
+import logging
+from datetime import datetime
 
 app = Flask(__name__)
+
+# Logging setup
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+# Create a new log file for each session with a timestamp
+log_filename = datetime.now().strftime('logs/events_%Y-%m-%d_%H-%M-%S.log')
+logger = logging.getLogger('event_logger')
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler(log_filename)
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Disable Flask's default logging to avoid logging web events
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+def log_event(event_type, message):
+    logger.info(f'[{event_type}] {message}')
 
 # Variablen für Steuerung
 streaming = False
@@ -46,6 +69,7 @@ def rundenzeit_erfassen(auto_id):
         if auto_id in letzte_erfassung:
             rundenzeit = aktuelle_zeit - letzte_erfassung[auto_id]
             rundenzeiten[auto_id] = rundenzeit  # speichere die letzte Rundenzeit
+            log_event('Rundenzeit', f'{auto_id} hat eine Rundenzeit von {rundenzeit:.2f} Sekunden.')
 
             # Berechne die Durchschnittsgeschwindigkeit
             geschwindigkeit = (strecken_laenge * 3600) / (rundenzeit * 1000)  # km/h
@@ -54,6 +78,7 @@ def rundenzeit_erfassen(auto_id):
             if auto_id not in beste_rundenzeiten or rundenzeit < beste_rundenzeiten[auto_id]:
                 beste_rundenzeiten[auto_id] = rundenzeit
                 beste_geschwindigkeiten[auto_id] = geschwindigkeit
+                log_event('Beste Rundenzeit', f'{auto_id} hat eine neue beste Rundenzeit von {rundenzeit:.2f} Sekunden und eine Geschwindigkeit von {geschwindigkeit:.2f} km/h.')
         else:
             rundenzeit = None  # Keine Rundenzeit beim ersten Erkennen
 
@@ -124,8 +149,8 @@ def gen_frames():
         for car in config['carColors']:
             auto_id = car['name']
             hsv_color = hex_to_hsv(car['color'])
-            lower_color = np.array([hsv_color[0] - 10, 100, 100])
-            upper_color = np.array([hsv_color[0] + 10, 255, 255])
+            lower_color = np.array([hsv_color[0] - 10, 100, 100], dtype=np.uint8)
+            upper_color = np.array([hsv_color[0] + 10, 255, 255], dtype=np.uint8)
             mask = cv2.inRange(hsv, lower_color, upper_color)
 
             # Verwende Dilation, um benachbarte kleine Bereiche zu verbinden
@@ -241,6 +266,8 @@ def add_car():
             'color': color
         }
         config['carColors'].append(new_car)
+        with open('config.json', 'w') as f:
+            json.dump(config, f, indent=4)
         return jsonify(success=True, color=color)
     return jsonify(success=False), 400
 
