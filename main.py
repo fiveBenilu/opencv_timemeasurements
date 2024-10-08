@@ -36,7 +36,7 @@ streaming = False
 lock = threading.Lock()
 
 # Kamera einrichten
-camera = cv2.VideoCapture(1)  # Stelle sicher, dass die richtige Kamera verwendet wird
+camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwendet wird
 
 # Konfigurationsvariablen
 config = {}
@@ -284,4 +284,4 @@ def get_best_lap_times():
     return jsonify(lap_times)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=80, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
