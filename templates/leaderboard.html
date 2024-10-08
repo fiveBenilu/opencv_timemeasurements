@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #content {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        #video-container {
+            flex-basis: 60%;
+            text-align: center;
+            padding-right: 20px;
+        }
+        #video-container img {
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        #controls {
+            margin-top: 15px;
+        }
+        #controls form {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        #controls button {
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #controls button:hover {
+            background-color: #218838;
+        }
+        #times-container {
+            flex-basis: 35%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .table-wrapper {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .inactive {
+            color: #dc3545;
+        }
+        .active {
+            color: #28a745;
+        }
+        .navbar {
+            background-color: white; /* Set the background color of the navbar to white */
+            color: #007bff; /* Set the text color */
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+        }
+        .navbar img {
+            height: 70px; /* Adjust the height as needed */
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b; /* Set the text color */
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+        <a href="/leaderboard">Leaderboard</a>
+    </div>
+    
+    <div id="content">
+        <div id="times-container">
+            <div class="table-wrapper">
+                <h2>Leaderboard</h2>
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Car</th>
+                            <th>Best Lap Time (Seconds)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <!-- Dynamische Zeilen für das Leaderboard -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funktion zum Abrufen der besten Rundenzeiten und Erstellen des Leaderboards
+        function fetchLeaderboard() {
+            fetch('/get_best_lap_times')
+                .then(response => response.json())
+                .then(data => {
+                    const leaderboardBody = document.getElementById('leaderboard-body');
+                    leaderboardBody.innerHTML = ''; // Leere die Tabelle
+
+                    // Sortiere die Autos nach der besten Rundenzeit
+                    data.sort((a, b) => a.bestLapTime - b.bestLapTime);
+
+                    // Erstelle die Tabelle
+                    data.forEach((car, index) => {
+                        const row = `<tr>
+                            <td>${index + 1}</td>
+                            <td>${car.name}</td>
+                            <td>${car.bestLapTime.toFixed(2)}</td>
+                        </tr>`;
+                        leaderboardBody.innerHTML += row;
+                    });
+                });
+        }
+
+        // Lade das Leaderboard beim Laden der Seite
+        window.onload = fetchLeaderboard;
+    </script>
+</body>
+</html>

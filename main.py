@@ -28,6 +28,7 @@ config = {
 # Rundenzeiten und Delays
 rundenzeiten = {}
 letzte_erfassung = {}
+beste_rundenzeiten = {}
 delay_zeit = 3
 
 # Boundary Box für die Erkennung
@@ -42,9 +43,20 @@ def rundenzeit_erfassen(auto_id):
     with lock:
         if auto_id in letzte_erfassung and (aktuelle_zeit - letzte_erfassung[auto_id] < delay_zeit):
             return None
-        rundenzeit = aktuelle_zeit - letzte_erfassung.get(auto_id, aktuelle_zeit)  # Nutze die letzte Erfassungszeit
-        rundenzeiten[auto_id] = rundenzeit  # speichere die letzte Rundenzeit
+        
+        # Berechne die Rundenzeit nur, wenn das Auto bereits erfasst wurde
+        if auto_id in letzte_erfassung:
+            rundenzeit = aktuelle_zeit - letzte_erfassung[auto_id]
+            rundenzeiten[auto_id] = rundenzeit  # speichere die letzte Rundenzeit
+
+            # Aktualisiere die beste Rundenzeit
+            if auto_id not in beste_rundenzeiten or rundenzeit < beste_rundenzeiten[auto_id]:
+                beste_rundenzeiten[auto_id] = rundenzeit
+        else:
+            rundenzeit = None  # Keine Rundenzeit beim ersten Erkennen
+
         letzte_erfassung[auto_id] = aktuelle_zeit  # aktualisiere die Erkennungszeit
+
     return rundenzeiten.get(auto_id, None)
 
 # Funktion zur Anpassung der Farben und des Weißabgleichs
@@ -85,7 +97,6 @@ def rgb_to_hex(rgb_color):
         return f'#{r:02x}{g:02x}{b:02x}'
     return None
 
-# Funktion für den Videostream mit Rundenzeiterfassung
 def gen_frames():
     global streaming
     while True:
@@ -101,6 +112,7 @@ def gen_frames():
         # Bild anpassen (Farben und Weißabgleich)
         frame = adjust_image(frame)
 
+        # Konvertiere das Bild in den HSV-Farbraum
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Zeichne die senkrechte Boundary Box
@@ -114,18 +126,26 @@ def gen_frames():
             upper_color = np.array([hsv_color[0] + 10, 255, 255])
             mask = cv2.inRange(hsv, lower_color, upper_color)
 
-            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            # Verwende Dilation, um benachbarte kleine Bereiche zu verbinden
+            kernel = np.ones((5, 5), np.uint8)
+            mask = cv2.dilate(mask, kernel, iterations=2)
+
+            # Finde Konturen im maskierten Bild
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for contour in contours:
                 area = cv2.contourArea(contour)
                 if area > 500:  # Filter für Rauschen
+
+                    # Finde die Bounding Box der zusammengefassten Kontur
                     cx, cy, cw, ch = cv2.boundingRect(contour)
 
                     # Auto-Box zeichnen
-                    cv2.rectangle(frame, (cx, cy), (cx + cw, cy + ch), tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5)), 2)
-                    cv2.putText(frame, auto_id, (cx, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5)), 2)
+                    car_color = tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5))
+                    cv2.rectangle(frame, (cx, cy), (cx + cw, cy + ch), car_color, 2)
+                    cv2.putText(frame, auto_id, (cx, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, car_color, 2)
 
                     # Überprüfung, ob das Auto in die senkrechte Boundary Box kommt
-                    if x < cx < x + w and y < cy < y + h and auto_id not in autos_in_boundary:
+                    if (x < cx < x + w and y < cy < y + h and auto_id not in autos_in_boundary):
                         # Auto ist in der Boundary Box
                         rundenzeit = rundenzeit_erfassen(auto_id)
                         if rundenzeit is not None:
@@ -135,6 +155,7 @@ def gen_frames():
                         # Auto ist nicht mehr in der Boundary Box, entferne es aus der Überwachung
                         del autos_in_boundary[auto_id]
 
+        # Bild kodieren und als Byte-Stream zurückgeben
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
 
@@ -142,7 +163,7 @@ def gen_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
         # Kurze Pause, um CPU-Last zu reduzieren
-        time.sleep(0.01)
+        time.sleep(0.005)
 
 # Routen für Flask
 @app.route('/')
@@ -218,6 +239,18 @@ def add_car():
         config['carColors'].append(new_car)
         return jsonify(success=True, color=color)
     return jsonify(success=False), 400
+
+# Route für das Leaderboard
+@app.route('/leaderboard')
+def leaderboard():
+    return render_template('leaderboard.html')
+
+# API-Endpunkt zum Abrufen der besten Rundenzeiten
+@app.route('/get_best_lap_times')
+def get_best_lap_times():
+    with lock:
+        lap_times = [{'name': auto_id, 'bestLapTime': best_time} for auto_id, best_time in beste_rundenzeiten.items()]
+    return jsonify(lap_times)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80, debug=False)
