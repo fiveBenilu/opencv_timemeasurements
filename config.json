@@ -5,15 +5,7 @@
     "saturation": 60,
     "carColors": [
         {
-            "name": "test",
-            "color": "#00ff00"
-        },
-        {
-            "name": "nigga",
-            "color": "#000000"
-        },
-        {
-            "name": "auto_3",
+            "name": "auto_1",
             "color": "#f28395"
         }
     ]

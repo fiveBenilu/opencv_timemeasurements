@@ -149,8 +149,8 @@ def gen_frames():
         for car in config['carColors']:
             auto_id = car['name']
             hsv_color = hex_to_hsv(car['color'])
-            lower_color = np.array([hsv_color[0] - 10, 100, 100], dtype=np.uint8)
-            upper_color = np.array([hsv_color[0] + 10, 255, 255], dtype=np.uint8)
+            lower_color = np.array([max(hsv_color[0] - 10, 0), 100, 100], dtype=np.uint8)
+            upper_color = np.array([min(hsv_color[0] + 10, 255), 255, 255], dtype=np.uint8)
             mask = cv2.inRange(hsv, lower_color, upper_color)
 
             # Verwende Dilation, um benachbarte kleine Bereiche zu verbinden
