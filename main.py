@@ -12,7 +12,7 @@ streaming = False
 lock = threading.Lock()
 
 # Kamera einrichten
-camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwendet wird
+camera = cv2.VideoCapture(1)  # Stelle sicher, dass die richtige Kamera verwendet wird
 
 # Konfigurationsvariablen
 config = {
@@ -29,7 +29,9 @@ config = {
 rundenzeiten = {}
 letzte_erfassung = {}
 beste_rundenzeiten = {}
+beste_geschwindigkeiten = {}
 delay_zeit = 3
+strecken_laenge = 250  # Länge der Strecke in Metern
 
 # Boundary Box für die Erkennung
 boundary_box = (500, 0, 150, 1080)  # (x, y, width, height)
@@ -49,9 +51,13 @@ def rundenzeit_erfassen(auto_id):
             rundenzeit = aktuelle_zeit - letzte_erfassung[auto_id]
             rundenzeiten[auto_id] = rundenzeit  # speichere die letzte Rundenzeit
 
-            # Aktualisiere die beste Rundenzeit
+            # Berechne die Durchschnittsgeschwindigkeit
+            geschwindigkeit = (strecken_laenge * 3600) / (rundenzeit * 1000)  # km/h
+
+            # Aktualisiere die beste Rundenzeit und Geschwindigkeit
             if auto_id not in beste_rundenzeiten or rundenzeit < beste_rundenzeiten[auto_id]:
                 beste_rundenzeiten[auto_id] = rundenzeit
+                beste_geschwindigkeiten[auto_id] = geschwindigkeit
         else:
             rundenzeit = None  # Keine Rundenzeit beim ersten Erkennen
 
@@ -163,7 +169,7 @@ def gen_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
         # Kurze Pause, um CPU-Last zu reduzieren
-        time.sleep(0.005)
+        time.sleep(0.01)
 
 # Routen für Flask
 @app.route('/')
@@ -245,11 +251,11 @@ def add_car():
 def leaderboard():
     return render_template('leaderboard.html')
 
-# API-Endpunkt zum Abrufen der besten Rundenzeiten
+# API-Endpunkt zum Abrufen der besten Rundenzeiten und Geschwindigkeiten
 @app.route('/get_best_lap_times')
 def get_best_lap_times():
     with lock:
-        lap_times = [{'name': auto_id, 'bestLapTime': best_time} for auto_id, best_time in beste_rundenzeiten.items()]
+        lap_times = [{'name': auto_id, 'bestLapTime': best_time, 'bestSpeed': beste_geschwindigkeiten[auto_id]} for auto_id, best_time in beste_rundenzeiten.items()]
     return jsonify(lap_times)
 
 if __name__ == "__main__":

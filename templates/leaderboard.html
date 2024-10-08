@@ -123,6 +123,7 @@
                             <th>Rank</th>
                             <th>Car</th>
                             <th>Best Lap Time (Seconds)</th>
+                            <th>Average Speed (km/h)</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
@@ -151,6 +152,7 @@
                             <td>${index + 1}</td>
                             <td>${car.name}</td>
                             <td>${car.bestLapTime.toFixed(2)}</td>
+                            <td>${car.bestSpeed.toFixed(2)}</td>
                         </tr>`;
                         leaderboardBody.innerHTML += row;
                     });
@@ -159,6 +161,9 @@
 
         // Lade das Leaderboard beim Laden der Seite
         window.onload = fetchLeaderboard;
+
+        // Aktualisiere das Leaderboard alle 2 Sekunden
+        setInterval(fetchLeaderboard, 2000);
     </script>
 </body>
 </html>
