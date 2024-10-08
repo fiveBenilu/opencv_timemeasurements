@@ -50,7 +50,7 @@ letzte_erfassung = {}
 beste_rundenzeiten = {}
 beste_geschwindigkeiten = {}
 delay_zeit = 3
-strecken_laenge = 250  # Länge der Strecke in Metern
+strecken_laenge = 120  # Länge der Strecke in Metern
 
 # Boundary Box für die Erkennung
 boundary_box = (500, 0, 150, 1080)  # (x, y, width, height)
