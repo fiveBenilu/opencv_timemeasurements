@@ -1,0 +1,16 @@
+{
+    "inactiveLimit": 10,
+    "alpha": 1.0,
+    "beta": 40,
+    "saturation": 60,
+    "carColors": [
+        {
+            "name": "test",
+            "color": "#00ff00"
+        },
+        {
+            "name": "nigga",
+            "color": "#000000"
+        }
+    ]
+}

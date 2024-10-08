@@ -4,6 +4,7 @@ import time
 import threading
 import numpy as np
 import re
+import json
 
 app = Flask(__name__)
 
@@ -15,15 +16,10 @@ lock = threading.Lock()
 camera = cv2.VideoCapture(1)  # Stelle sicher, dass die richtige Kamera verwendet wird
 
 # Konfigurationsvariablen
-config = {
-    'inactiveLimit': 10,  # Standardwert für Inaktivitätsgrenze
-    'alpha': 1.3,         # Standardwert für Kontrast
-    'beta': 40,           # Standardwert für Helligkeit
-    'saturation': 90,     # Standardwert für Sättigung
-    'carColors': [
-        {'name': 'test', 'color': '#00FF00'}
-    ]
-}
+config = {}
+
+with open('config.json', 'r') as f:
+    config = json.load(f)
 
 # Rundenzeiten und Delays
 rundenzeiten = {}
@@ -229,6 +225,8 @@ def save_config():
     config['beta'] = int(data.get('beta', 40))
     config['saturation'] = int(data.get('saturation', 50))
     config['carColors'] = data.get('carColors', [])
+    with open('config.json', 'w') as f:
+        json.dump(config, f, indent=4)
     return jsonify(success=True)
 
 @app.route('/add_car', methods=['POST'])
