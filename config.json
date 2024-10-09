@@ -3,5 +3,14 @@
     "alpha": 1.0,
     "beta": 40,
     "saturation": 60,
-    "carColors": []
+    "carColors": [
+        {
+            "name": "auto_1",
+            "color": "#5b7d59"
+        },
+        {
+            "name": "auto_2",
+            "color": "#8e4c58"
+        }
+    ]
 }

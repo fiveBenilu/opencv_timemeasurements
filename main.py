@@ -299,7 +299,7 @@ def car_details(auto_id):
     with lock:
         runden = rundenzeiten.get(auto_id, [])
         if not runden:
-            return render_template('car_details.html', auto_id=auto_id, runden=[], avg_rundenzeit=None, avg_geschwindigkeit=None)
+            return render_template('car_details.html', auto_id=auto_id, runden=[], avg_rundenzeit=None, avg_geschwindigkeit=None, gefahrene_strecke=None, rundenanzahl=0)
 
         # Berechne die durchschnittliche Rundenzeit und Geschwindigkeit
         total_rundenzeit = sum(runden)
@@ -309,8 +309,13 @@ def car_details(auto_id):
         # Formatieren der Werte auf maximal 3 Nachkommastellen
         avg_rundenzeit = f"{avg_rundenzeit:.3f}"
         avg_geschwindigkeit = f"{avg_geschwindigkeit:.3f}"
+        gefahrene_strecke = (len(runden) * strecken_laenge) / 1000  # in km
+        rundenanzahl = len(runden)
 
-    return render_template('car_details.html', auto_id=auto_id, runden=runden, avg_rundenzeit=avg_rundenzeit, avg_geschwindigkeit=avg_geschwindigkeit)
+        # Formatieren der Rundenzeiten auf maximal 3 Nachkommastellen
+        runden = [f"{runde:.3f}" for runde in runden]
+
+    return render_template('car_details.html', auto_id=auto_id, runden=runden, avg_rundenzeit=avg_rundenzeit, avg_geschwindigkeit=avg_geschwindigkeit, gefahrene_strecke=gefahrene_strecke, rundenanzahl=rundenanzahl)
 
 @app.route('/reset_data', methods=['POST'])
 def reset_data():

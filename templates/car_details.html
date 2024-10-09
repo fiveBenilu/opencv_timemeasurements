@@ -19,6 +19,13 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+        .info-box {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
         h1 {
             text-align: center;
             color: #333;
@@ -77,8 +84,12 @@
     
     <div class="container">
         <h1>Details für Auto: {{ auto_id }}</h1>
-        <h2>Durchschnittliche Rundenzeit: {{ avg_rundenzeit if avg_rundenzeit else 'Keine Daten' }} Sekunden</h2>
-        <h2>Durchschnittliche Geschwindigkeit: {{ avg_geschwindigkeit if avg_geschwindigkeit else 'Keine Daten' }} km/h</h2>
+        <div class="info-box">
+            <h2>Durchschnittliche Rundenzeit: {{ avg_rundenzeit if avg_rundenzeit else 'Keine Daten' }} Sekunden</h2>
+            <h2>Durchschnittliche Geschwindigkeit: {{ avg_geschwindigkeit if avg_geschwindigkeit else 'Keine Daten' }} km/h</h2>
+            <h2>Zurückgelegte Strecke: {{ gefahrene_strecke }} Km</h2>
+            <h2>Gefahrene Runden: {{ rundenanzahl }}</h2>
+        </div>
         <h3>Rundenzeiten:</h3>
         <table>
             <thead>
