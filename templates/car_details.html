@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Details für Auto: {{ auto_id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .navbar {
+            background-color: white;
+            color: #007bff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .navbar img {
+            height: 70px;
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b;
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="#autos">Car Details</a>
+    </div>
+    
+    <div class="container">
+        <h1>Details für Auto: {{ auto_id }}</h1>
+        <h2>Durchschnittliche Rundenzeit: {{ avg_rundenzeit if avg_rundenzeit else 'Keine Daten' }} Sekunden</h2>
+        <h2>Durchschnittliche Geschwindigkeit: {{ avg_geschwindigkeit if avg_geschwindigkeit else 'Keine Daten' }} km/h</h2>
+        <h3>Rundenzeiten:</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Runde</th>
+                    <th>Rundenzeit (Sekunden)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for runde in runden %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ runde }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="2">Keine Rundenzeiten verfügbar</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}">Zurück zur Startseite</a>
+    </div>
+</body>
+</html>

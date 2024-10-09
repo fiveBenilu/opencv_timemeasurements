@@ -41,7 +41,14 @@ camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwende
 # Konfigurationsvariablen
 config = {}
 
-with open('config.json', 'r') as f:
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the full path to the config.json file
+config_path = os.path.join(script_dir, 'config.json')
+
+# Open the config.json file
+with open(config_path, 'r') as f:
     config = json.load(f)
 
 # Rundenzeiten und Delays
@@ -52,13 +59,12 @@ beste_geschwindigkeiten = {}
 delay_zeit = 3
 strecken_laenge = 120  # Länge der Strecke in Metern
 
-# Boundary Box für die Erkennung
-boundary_box = (500, 0, 150, 1080)  # (x, y, width, height)
+# Boundary Box für die Erkennung (initial auf 0 gesetzt)
+boundary_box = (0, 0, 0, 0)
 
 # Überwachung, ob das Auto bereits in der Boundary Box ist
 autos_in_boundary = {}
 
-# Funktion zur Erfassung der Rundenzeit
 def rundenzeit_erfassen(auto_id):
     aktuelle_zeit = time.time()
     with lock:
@@ -68,7 +74,9 @@ def rundenzeit_erfassen(auto_id):
         # Berechne die Rundenzeit nur, wenn das Auto bereits erfasst wurde
         if auto_id in letzte_erfassung:
             rundenzeit = aktuelle_zeit - letzte_erfassung[auto_id]
-            rundenzeiten[auto_id] = rundenzeit  # speichere die letzte Rundenzeit
+            if auto_id not in rundenzeiten:
+                rundenzeiten[auto_id] = []
+            rundenzeiten[auto_id].append(rundenzeit)  # speichere die letzte Rundenzeit
             log_event('Rundenzeit', f'{auto_id} hat eine Rundenzeit von {rundenzeit:.2f} Sekunden.')
 
             # Berechne die Durchschnittsgeschwindigkeit
@@ -125,16 +133,16 @@ def rgb_to_hex(rgb_color):
     return None
 
 def gen_frames():
-    global streaming
+    global streaming, boundary_box
     while True:
-        with lock:
-            if not streaming:
-                break
-
         ret, frame = camera.read()
         if not ret:
             time.sleep(0.1)
             continue
+
+        # Aktualisiere die Boundary Box basierend auf der Frame-Größe
+        height, width, _ = frame.shape
+        boundary_box = (0, 0, width, height)  # Setze die Boundary Box auf die Größe des Frames
 
         # Bild anpassen (Farben und Weißabgleich)
         frame = adjust_image(frame)
@@ -172,22 +180,24 @@ def gen_frames():
                     cv2.putText(frame, auto_id, (cx, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, car_color, 2)
 
                     # Überprüfung, ob das Auto in die senkrechte Boundary Box kommt
-                    if (x < cx < x + w and y < cy < y + h and auto_id not in autos_in_boundary):
+                    if (x < cx < x + w and y < cy < y + h):
                         # Auto ist in der Boundary Box
                         rundenzeit = rundenzeit_erfassen(auto_id)
                         if rundenzeit is not None:
-                            print(f"{auto_id} hat eine Rundenzeit von {rundenzeit:.2f} Sekunden.")
-                            autos_in_boundary[auto_id] = True  # Markiere das Auto als in der Boundary Box
-                    elif not (x < cx < x + w and y < cy < y + h) and auto_id in autos_in_boundary:
+                            letzte_rundenzeit = rundenzeit[-1]  # Nehmen Sie die letzte Rundenzeit aus der Liste
+                            print(f"{auto_id} hat eine Rundenzeit von {letzte_rundenzeit:.2f} Sekunden.")
+                        autos_in_boundary[auto_id] = True  # Markiere das Auto als in der Boundary Box
+                    else:
                         # Auto ist nicht mehr in der Boundary Box, entferne es aus der Überwachung
-                        del autos_in_boundary[auto_id]
+                        autos_in_boundary[auto_id] = False
 
-        # Bild kodieren und als Byte-Stream zurückgeben
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
+        # Bild kodieren und als Byte-Stream zurückgeben, wenn Streaming aktiviert ist
+        if streaming:
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
         # Kurze Pause, um CPU-Last zu reduzieren
         time.sleep(0.01)
@@ -195,7 +205,7 @@ def gen_frames():
 # Routen für Flask
 @app.route('/')
 def index():
-    return render_template('index.html', config=config)
+    return render_template('index.html', config=config, autos=list(rundenzeiten.keys()))
 
 @app.route('/start')
 def start_stream():
@@ -224,7 +234,8 @@ def get_rundenzeiten():
     aktuelle_zeit = time.time()
     inactive_limit = config['inactiveLimit']
     with lock:
-        for auto_id, letzte_rundenzeit in rundenzeiten.items():
+        for auto_id, runden in rundenzeiten.items():
+            letzte_rundenzeit = runden[-1] if runden else None
             letzte_erfassungszeit = letzte_erfassung.get(auto_id, aktuelle_zeit)
             inaktiv_zeit = aktuelle_zeit - letzte_erfassungszeit
             zeiten[auto_id] = {
@@ -250,7 +261,7 @@ def save_config():
     config['beta'] = int(data.get('beta', 40))
     config['saturation'] = int(data.get('saturation', 50))
     config['carColors'] = data.get('carColors', [])
-    with open('config.json', 'w') as f:
+    with open(config_path, 'w') as f:
         json.dump(config, f, indent=4)
     return jsonify(success=True)
 
@@ -266,7 +277,7 @@ def add_car():
             'color': color
         }
         config['carColors'].append(new_car)
-        with open('config.json', 'w') as f:
+        with open(config_path, 'w') as f:
             json.dump(config, f, indent=4)
         return jsonify(success=True, color=color)
     return jsonify(success=False), 400
@@ -282,6 +293,35 @@ def get_best_lap_times():
     with lock:
         lap_times = [{'name': auto_id, 'bestLapTime': best_time, 'bestSpeed': beste_geschwindigkeiten[auto_id]} for auto_id, best_time in beste_rundenzeiten.items()]
     return jsonify(lap_times)
+
+@app.route('/car/<auto_id>')
+def car_details(auto_id):
+    with lock:
+        runden = rundenzeiten.get(auto_id, [])
+        if not runden:
+            return render_template('car_details.html', auto_id=auto_id, runden=[], avg_rundenzeit=None, avg_geschwindigkeit=None)
+
+        # Berechne die durchschnittliche Rundenzeit und Geschwindigkeit
+        total_rundenzeit = sum(runden)
+        avg_rundenzeit = total_rundenzeit / len(runden)
+        avg_geschwindigkeit = (strecken_laenge * 3600) / (avg_rundenzeit * 1000)  # km/h
+
+        # Formatieren der Werte auf maximal 3 Nachkommastellen
+        avg_rundenzeit = f"{avg_rundenzeit:.3f}"
+        avg_geschwindigkeit = f"{avg_geschwindigkeit:.3f}"
+
+    return render_template('car_details.html', auto_id=auto_id, runden=runden, avg_rundenzeit=avg_rundenzeit, avg_geschwindigkeit=avg_geschwindigkeit)
+
+@app.route('/reset_data', methods=['POST'])
+def reset_data():
+    global rundenzeiten, letzte_erfassung, beste_rundenzeiten, beste_geschwindigkeiten, autos_in_boundary
+    with lock:
+        rundenzeiten = {}
+        letzte_erfassung = {}
+        beste_rundenzeiten = {}
+        beste_geschwindigkeiten = {}
+        autos_in_boundary = {}
+    return redirect(url_for('index'))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)

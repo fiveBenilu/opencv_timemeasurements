@@ -77,19 +77,19 @@
             color: #28a745;
         }
         .navbar {
-            background-color: white; /* Set the background color of the navbar to white */
-            color: #007bff; /* Set the text color */
+            background-color: white;
+            color: #007bff;
             padding: 10px 20px;
             display: flex;
             align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .navbar img {
-            height: 70px; /* Adjust the height as needed */
+            height: 70px;
             margin-right: 40px;
         }
         .navbar h1 {
-            color: #2b2b2b; /* Set the text color */
+            color: #2b2b2b;
             margin: 0;
             font-size: 24px;
         }
@@ -111,6 +111,7 @@
         <a href="/">Home</a>
         <a href="/config">Konfiguration</a>
         <a href="/leaderboard">Leaderboard</a>
+        <a href="#autos">Car Details</a>
     </div>
     
     <div id="content">
@@ -122,6 +123,9 @@
                 </form>
                 <form action="{{ url_for('stop_stream') }}">
                     <button type="submit" style="background-color: #dc3545;">Stream Stoppen</button>
+                </form>
+                <form action="{{ url_for('reset_data') }}" method="post">
+                    <button type="submit" style="background-color: #ffc107;">Daten Zurücksetzen</button>
                 </form>
             </div>
         </div>
@@ -157,6 +161,17 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <div id="autos">
+        <h2>Verfügbare Autos</h2>
+        <ul>
+            {% for auto_id in autos %}
+                <li><a href="{{ url_for('car_details', auto_id=auto_id) }}">{{ auto_id }}</a></li>
+            {% else %}
+                <li>Keine Autos verfügbar</li>
+            {% endfor %}
+        </ul>
     </div>
 
     <script>
@@ -208,7 +223,7 @@
                     tbody.innerHTML = '';  // Leere die Tabelle
                     for (const [auto, info] of Object.entries(data)) {
                         const letzteRunde = info.letzte_runde ? info.letzte_runde.toFixed(2) : 'N/A';
-                        const row = `<tr><td>${auto}</td><td>${letzteRunde}</td></tr>`;
+                        const row = `<tr><td><a href="/car/${auto}">${auto}</a></td><td>${letzteRunde}</td></tr>`;
                         tbody.innerHTML += row;
                     }
                 });
