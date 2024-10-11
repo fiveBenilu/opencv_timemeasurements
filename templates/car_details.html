@@ -91,6 +91,7 @@
             <h2>Gefahrene Runden: {{ rundenanzahl }}</h2>
         </div>
         <h3>Rundenzeiten:</h3>
+        <canvas id="rundenChart" width="400" height="200"></canvas>
         <table>
             <thead>
                 <tr>
@@ -113,5 +114,33 @@
         </table>
         <a href="{{ url_for('index') }}">Zurück zur Startseite</a>
     </div>
+    
+    <script src="{{ url_for('static', filename='assets/js/chart.umd.js') }}"></script>
+    <script>
+        var ctx = document.getElementById('rundenChart').getContext('2d');
+        var rundenzeiten = {{ runden | tojson }};
+        var labels = rundenzeiten.map((_, index) => `Runde ${index + 1}`);
+        
+        var rundenChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Rundenzeit (Sekunden)',
+                    data: rundenzeiten,
+                    backgroundColor: 'rgba(0, 255, 0, 0.2)', // Hellgrün mit Transparenz
+                    borderColor: 'rgba(0, 128, 0, 1)', // Dunkelgrün
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
