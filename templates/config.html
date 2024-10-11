@@ -13,7 +13,8 @@
         }
         #content {
             display: flex;
-            justify-content: center;
+            flex-wrap: wrap;
+            justify-content: space-around;
             padding: 20px;
             max-width: 1200px;
             margin: auto;
@@ -24,23 +25,26 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
         }
         .navbar {
-            background-color: white; /* Set the background color of the navbar to white */
-            color: #007bff; /* Set the text color */
+            background-color: white;
+            color: #007bff;
             padding: 10px 20px;
             display: flex;
             align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
         }
         .navbar img {
-            height: 70px; /* Adjust the height as needed */
+            height: 70px;
             margin-right: 40px;
         }
         .navbar h1 {
-            color: #2b2b2b; /* Set the text color */
+            color: #2b2b2b;
             margin: 0;
             font-size: 24px;
+            flex-grow: 1;
         }
         .navbar a {
             margin-left: 20px;
@@ -97,6 +101,40 @@
             background-color: #dc3545;
             margin-left: 10px;
         }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar img {
+                margin-bottom: 10px;
+            }
+            .navbar h1 {
+                font-size: 20px;
+            }
+            .navbar a {
+                margin-left: 0;
+                margin-top: 5px;
+            }
+            #content {
+                flex-direction: column;
+                align-items: center;
+            }
+            #config-container {
+                flex-basis: 100%;
+                margin-top: 20px;
+                padding: 10px;
+            }
+            input[type="number"], input[type="text"], input[type="color"] {
+                font-size: 14px;
+                padding: 8px;
+            }
+            button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -132,6 +170,16 @@
                 <button type="button" id="add-car-color">Auto hinzufügen</button>
 
                 <button type="submit">Speichern</button>
+            </form>
+
+            <form action="{{ url_for('start_stream') }}" method="post">
+                <button type="submit" style="background-color: #28a745;">Stream Starten</button>
+            </form>
+            <form action="{{ url_for('stop_stream') }}" method="post">
+                <button type="submit" style="background-color: #dc3545;">Stream Stoppen</button>
+            </form>
+            <form action="{{ url_for('reset_data') }}" method="post">
+                <button type="submit" style="background-color: #ffc107;">Daten Zurücksetzen</button>
             </form>
         </div>
     </div>

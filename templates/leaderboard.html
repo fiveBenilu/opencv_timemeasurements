@@ -13,45 +13,19 @@
         }
         #content {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-around;
             padding: 20px;
             max-width: 1200px;
             margin: auto;
         }
-        #video-container {
+        #leaderboard-container {
             flex-basis: 60%;
-            text-align: center;
-            padding-right: 20px;
-        }
-        #video-container img {
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-        }
-        #controls {
-            margin-top: 15px;
-        }
-        #controls form {
-            display: inline-block;
-            margin-right: 10px;
-        }
-        #controls button {
-            padding: 12px 24px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #controls button:hover {
-            background-color: #218838;
-        }
-        #times-container {
-            flex-basis: 35%;
             background-color: #fff;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
         }
         .table-wrapper {
             margin-bottom: 20px;
@@ -70,28 +44,24 @@
             background-color: #f8f9fa;
             font-weight: bold;
         }
-        .inactive {
-            color: #dc3545;
-        }
-        .active {
-            color: #28a745;
-        }
         .navbar {
-            background-color: white; /* Set the background color of the navbar to white */
-            color: #007bff; /* Set the text color */
+            background-color: white;
+            color: #007bff;
             padding: 10px 20px;
             display: flex;
             align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow to make the navbar stand out */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
         }
         .navbar img {
-            height: 70px; /* Adjust the height as needed */
+            height: 70px;
             margin-right: 40px;
         }
         .navbar h1 {
-            color: #2b2b2b; /* Set the text color */
+            color: #2b2b2b;
             margin: 0;
             font-size: 24px;
+            flex-grow: 1;
         }
         .navbar a {
             margin-left: 20px;
@@ -101,6 +71,31 @@
         }
         .navbar a:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            #content {
+                flex-direction: column;
+                align-items: center;
+            }
+            #leaderboard-container {
+                flex-basis: 100%;
+                margin-top: 20px;
+            }
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar img {
+                margin-bottom: 10px;
+            }
+            .navbar h1 {
+                font-size: 20px;
+            }
+            .navbar a {
+                margin-left: 0;
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
@@ -115,7 +110,7 @@
     </div>
     
     <div id="content">
-        <div id="times-container">
+        <div id="leaderboard-container">
             <div class="table-wrapper">
                 <h2>Leaderboard</h2>
                 <table id="leaderboard-table">
