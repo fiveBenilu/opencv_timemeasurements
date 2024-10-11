@@ -10,6 +10,7 @@
 - **Color Detection**: Detects cars based on their color and measures lap times.
 - **Web Interface**: Provides a web interface using Flask to start/stop the video feed and view lap times.
 - **Configurable Settings**: Allows configuration of various parameters such as inactive time limit, contrast, brightness, and saturation.
+- **Detailed Car View**: Displays detailed information for each tracked car, including all lap times, average lap time, and average speed.
 
 ## Installation
 
@@ -38,7 +39,7 @@
     ```
 
 2. **Access the web interface**:
-    Open a web browser and go to `http://127.0.0.1:80`.
+    Open a web browser and go to `http://127.0.0.1:5000`.
 
 3. **Start the video feed**:
     Click on the "Start" button to begin the video feed and start measuring lap times.
@@ -48,6 +49,9 @@
 
 5. **View lap times**:
     Lap times and the status of each car can be viewed on the web interface.
+
+6. **View detailed car information**:
+    Click on a car's name to view detailed information, including all tracked lap times, average lap time, and average speed.
 
 ## Configuration
 
@@ -70,6 +74,7 @@ The application allows you to configure various settings through the `config.htm
 - **`GET /get_config`**: Returns the current configuration.
 - **`POST /save_config`**: Saves the configuration.
 - **`POST /add_car`**: Adds a new car with the specified color.
+- **`GET /car/<auto_id>`**: Renders the detailed view for a specific car.
 
 ## Contributing
 

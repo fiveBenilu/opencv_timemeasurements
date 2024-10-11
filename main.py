@@ -37,6 +37,7 @@ lock = threading.Lock()
 
 # Kamera einrichten
 camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwendet wird
+camera.set(cv2.CAP_PROP_FPS, 60)
 
 # Konfigurationsvariablen
 config = {}

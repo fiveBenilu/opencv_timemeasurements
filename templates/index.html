@@ -13,6 +13,7 @@
         }
         #content {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-around;
             padding: 20px;
             max-width: 1200px;
@@ -22,10 +23,18 @@
             flex-basis: 60%;
             text-align: center;
             padding-right: 20px;
+            position: relative;
         }
         #video-container img {
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            max-width: 100%;
+            height: auto;
+        }
+        #boundary-box {
+            position: absolute;
+            border: 2px dashed #ffc107;
+            pointer-events: none;
         }
         #controls {
             margin-top: 15px;
@@ -52,6 +61,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
         }
         .table-wrapper {
             margin-bottom: 20px;
@@ -101,6 +111,35 @@
         }
         .navbar a:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            #content {
+                flex-direction: column;
+                align-items: center;
+            }
+            #video-container {
+                flex-basis: 100%;
+                padding-right: 0;
+            }
+            #times-container {
+                flex-basis: 100%;
+                margin-top: 20px;
+            }
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar img {
+                margin-bottom: 10px;
+            }
+            .navbar h1 {
+                font-size: 20px;
+            }
+            .navbar a {
+                margin-left: 0;
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
