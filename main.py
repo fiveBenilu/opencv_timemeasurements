@@ -57,14 +57,17 @@ rundenzeiten = {}
 letzte_erfassung = {}
 beste_rundenzeiten = {}
 beste_geschwindigkeiten = {}
-delay_zeit = 3
-strecken_laenge = 120  # Länge der Strecke in Metern
+delay_zeit = config.get('delay_zeit', 10)  # Verzögerungszeit in Sekunden
+strecken_laenge = config.get('strecken_laenge', 120)  # Länge der Strecke in Metern
 
 # Boundary Box für die Erkennung (initial auf 0 gesetzt)
 boundary_box = (0, 0, 0, 0)
 
 # Überwachung, ob das Auto bereits in der Boundary Box ist
 autos_in_boundary = {}
+
+# Globale Variable für das analysierte Bild
+analysed_frame = None
 
 def rundenzeit_erfassen(auto_id):
     aktuelle_zeit = time.time()
@@ -133,8 +136,8 @@ def rgb_to_hex(rgb_color):
         return f'#{r:02x}{g:02x}{b:02x}'
     return None
 
-def gen_frames():
-    global streaming, boundary_box
+def track_cars():
+    global streaming, boundary_box, analysed_frame
     while True:
         ret, frame = camera.read()
         if not ret:
@@ -192,8 +195,24 @@ def gen_frames():
                         # Auto ist nicht mehr in der Boundary Box, entferne es aus der Überwachung
                         autos_in_boundary[auto_id] = False
 
-        # Bild kodieren und als Byte-Stream zurückgeben, wenn Streaming aktiviert ist
+        # Speichere das analysierte Bild in der globalen Variable
+        with lock:
+            analysed_frame = frame.copy()
+
+        # Kurze Pause, um CPU-Last zu reduzieren
+        time.sleep(0.01)
+
+def gen_frames():
+    global streaming, analysed_frame
+    while True:
         if streaming:
+            with lock:
+                if analysed_frame is not None:
+                    frame = analysed_frame.copy()
+                else:
+                    continue
+
+            # Bild kodieren und als Byte-Stream zurückgeben
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
 
@@ -210,19 +229,16 @@ def index():
 
 @app.route('/start')
 def start_stream():
-    global streaming, camera
+    global streaming
     with lock:
         streaming = True
-        if not camera.isOpened():
-            camera = cv2.VideoCapture(0)  # Stelle sicher, dass die richtige Kamera verwendet wird
     return redirect(url_for('index'))
 
 @app.route('/stop')
 def stop_stream():
-    global streaming, camera
+    global streaming
     with lock:
         streaming = False
-        camera.release()
     return redirect(url_for('index'))
 
 @app.route('/video_feed')
@@ -257,11 +273,13 @@ def get_config():
 @app.route('/save_config', methods=['POST'])
 def save_config():
     data = request.get_json()
-    config['inactiveLimit'] = int(data.get('inactiveLimit', 10))
-    config['alpha'] = float(data.get('alpha', 1.3))
-    config['beta'] = int(data.get('beta', 40))
-    config['saturation'] = int(data.get('saturation', 50))
-    config['carColors'] = data.get('carColors', [])
+    config['inactiveLimit'] = int(data.get('inactiveLimit', config.get('inactiveLimit', 10)))
+    config['alpha'] = float(data.get('alpha', config.get('alpha', 1.3)))
+    config['beta'] = int(data.get('beta', config.get('beta', 40)))
+    config['saturation'] = int(data.get('saturation', config.get('saturation', 50)))
+    config['delay_zeit'] = int(data.get('delayTime', config.get('delay_zeit', 10)))  # Verzögerungszeit in Sekunden
+    config['strecken_laenge'] = int(data.get('trackLength', config.get('strecken_laenge', 120)))
+    config['carColors'] = data.get('carColors', config.get('carColors', []))
     with open(config_path, 'w') as f:
         json.dump(config, f, indent=4)
     return jsonify(success=True)
@@ -330,4 +348,9 @@ def reset_data():
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
+    # Starte den Tracking-Thread
+    tracking_thread = threading.Thread(target=track_cars)
+    tracking_thread.daemon = True
+    tracking_thread.start()
+
     app.run(host='0.0.0.0', port=5000, debug=False)

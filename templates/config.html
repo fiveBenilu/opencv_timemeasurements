@@ -163,6 +163,12 @@
                 <label for="saturation">Sättigung (0-100):</label>
                 <input type="number" id="saturation" name="saturation" min="0" max="100" required>
 
+                <label for="trackLength">Streckenlänge (Meter):</label>
+                <input type="number" id="trackLength" name="trackLength" min="1" required>
+
+                <label for="delayTime">Verzögerungszeit (Sekunden):</label>
+                <input type="number" id="delayTime" name="delayTime" min="0" required>
+
                 <h3>Auto-Farben</h3>
                 <div id="car-colors">
                     <!-- Dynamische Farbauswahl -->
@@ -191,6 +197,8 @@
             const alpha = document.getElementById('alpha').value;
             const beta = document.getElementById('beta').value;
             const saturation = document.getElementById('saturation').value;
+            const trackLength = document.getElementById('trackLength').value;
+            const delayTime = document.getElementById('delayTime').value;
             const carColors = Array.from(document.querySelectorAll('.car-color-container')).map(container => {
                 return {
                     name: container.querySelector('input[type="text"]').value,
@@ -202,7 +210,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ inactiveLimit: inactiveLimit, alpha: alpha, beta: beta, saturation: saturation, carColors: carColors })
+                body: JSON.stringify({ inactiveLimit: inactiveLimit, alpha: alpha, beta: beta, saturation: saturation, trackLength: trackLength, delayTime: delayTime, carColors: carColors })
             })
             .then(response => response.json())
             .then(data => {
@@ -229,10 +237,12 @@
         fetch('/get_config')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('inactiveLimit').value = data.inactiveLimit;
-                document.getElementById('alpha').value = data.alpha;
-                document.getElementById('beta').value = data.beta;
-                document.getElementById('saturation').value = data.saturation;
+                document.getElementById('inactiveLimit').value = data.inactiveLimit || 10;
+                document.getElementById('alpha').value = data.alpha || 1.3;
+                document.getElementById('beta').value = data.beta || 40;
+                document.getElementById('saturation').value = data.saturation || 50;
+                document.getElementById('trackLength').value = data.strecken_laenge || 120;
+                document.getElementById('delayTime').value = data.delay_zeit || 10;
                 data.carColors.forEach(car => {
                     const container = document.createElement('div');
                     container.className = 'car-color-container';
