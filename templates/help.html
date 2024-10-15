@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hilfe - RC Auto Rennen Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .navbar {
+            background-color: white;
+            color: #007bff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .navbar img {
+            height: 70px;
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b;
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        #content {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        h2 {
+            color: #2b2b2b;
+        }
+        p {
+            line-height: 1.6;
+            color: #333;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        ul li {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar img {
+                margin-bottom: 10px;
+            }
+            .navbar h1 {
+                font-size: 20px;
+            }
+            .navbar a {
+                margin-left: 0;
+                margin-top: 5px;
+            }
+            #content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="/help">Hilfe</a>
+    </div>
+    
+    <div id="content">
+        <h2>Willkommen zur RC Auto Rennen Zeitmessung</h2>
+        <p>Diese Applikation hilft Ihnen, die Rundenzeiten Ihrer RC Autos zu messen und zu verfolgen. Bitte folgen Sie den untenstehenden Anweisungen, um die Applikation optimal zu nutzen:</p>
+        
+        <h3>Schritt 1: Konfiguration</h3>
+        <p>Bevor Sie beginnen, stellen Sie sicher, dass Sie die Applikation richtig konfiguriert haben:</p>
+        <ul>
+            <li>Gehen Sie zur <a href="/config">Konfigurationsseite</a>.</li>
+            <li>Stellen Sie die Inaktivitätsgrenze, Kontrast, Helligkeit, Sättigung, Streckenlänge und Verzögerungszeit nach Ihren Bedürfnissen ein.</li>
+            <li>Fügen Sie die Farben der Autos hinzu, die Sie verfolgen möchten. Klicken Sie auf "Auto hinzufügen" und wählen Sie die Farbe des Autos aus.</li>
+            <li>Klicken Sie auf "Speichern", um Ihre Einstellungen zu speichern.</li>
+        </ul>
+        
+        <h3>Schritt 2: Video-Feed</h3>
+        <p>Der Video-Feed zeigt Ihnen den aktuellen Zustand der Rennstrecke:</p>
+        <ul>
+            <li>Gehen Sie zur <a href="/">Startseite</a>, um den Video-Feed zu sehen.</li>
+            <li>Der Video-Feed zeigt die erkannten Autos und ihre Positionen auf der Strecke.</li>
+        </ul>
+        
+        <h3>Schritt 3: Rundenzeiten und aktive Fahrzeuge</h3>
+        <p>Die Applikation verfolgt die Rundenzeiten und den Status der Fahrzeuge:</p>
+        <ul>
+            <li>Auf der Startseite sehen Sie die letzten Rundenzeiten der erkannten Autos.</li>
+            <li>Sie können auch den Status der aktiven Fahrzeuge auf der Strecke sehen.</li>
+        </ul>
+        
+        <h3>Schritt 4: Leaderboard</h3>
+        <p>Das Leaderboard zeigt die besten Rundenzeiten und Geschwindigkeiten der Fahrzeuge:</p>
+        <ul>
+            <li>Gehen Sie zur <a href="/leaderboard">Leaderboard-Seite</a>, um die besten Rundenzeiten und Geschwindigkeiten zu sehen.</li>
+        </ul>
+        
+        <h3>Schritt 5: Daten zurücksetzen</h3>
+        <p>Wenn Sie die Daten zurücksetzen möchten:</p>
+        <ul>
+            <li>Klicken Sie auf der Startseite auf "Daten Zurücksetzen".</li>
+        </ul>
+        
+        <h3>Wichtige Hinweise</h3>
+        <ul>
+            <li>Stellen Sie sicher, dass die Kamera richtig positioniert ist und die gesamte Rennstrecke abdeckt.</li>
+            <li>Vermeiden Sie starke Lichtquellen oder Schatten auf der Rennstrecke, um die Farberkennung zu verbessern.</li>
+            <li>Überprüfen Sie regelmäßig die Konfiguration und passen Sie sie bei Bedarf an.</li>
+        </ul>
+        
+        <p>Wir hoffen, dass Sie viel Spaß mit der RC Auto Rennen Zeitmessung haben! Bei Fragen oder Problemen wenden Sie sich bitte an den Support.</p>
+    </div>
+</body>
+</html>

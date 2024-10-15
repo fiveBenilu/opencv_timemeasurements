@@ -56,7 +56,7 @@
             background-color: #218838;
         }
         #times-container {
-            flex-basis: 35%;
+            flex-basis: 100%;
             background-color: #fff;
             padding: 20px;
             border-radius: 10px;
@@ -65,6 +65,7 @@
         }
         .table-wrapper {
             margin-bottom: 20px;
+            padding: 0 20px; /* Padding zum Rand hinzufügen */
         }
         table {
             width: 100%;
@@ -150,19 +151,13 @@
         <a href="/">Home</a>
         <a href="/config">Konfiguration</a>
         <a href="/leaderboard">Leaderboard</a>
-        <a href="#autos">Car Details</a>
+        <a href="/help">Hilfe</a>
     </div>
     
     <div id="content">
         <div id="video-container">
             <img id="video-feed" src="{{ url_for('video_feed') }}" width="640" height="480" onclick="pickColor(event)">
             <div id="controls">
-                <form action="{{ url_for('start_stream') }}">
-                    <button type="submit">Stream Starten</button>
-                </form>
-                <form action="{{ url_for('stop_stream') }}">
-                    <button type="submit" style="background-color: #dc3545;">Stream Stoppen</button>
-                </form>
                 <form action="{{ url_for('reset_data') }}" method="post">
                     <button type="submit" style="background-color: #ffc107;">Daten Zurücksetzen</button>
                 </form>
@@ -202,7 +197,7 @@
         </div>
     </div>
 
-    <div id="autos">
+    <!-- <div id="autos">
         <h2>Verfügbare Autos</h2>
         <ul>
             {% for auto_id in autos %}
@@ -211,7 +206,7 @@
                 <li>Keine Autos verfügbar</li>
             {% endfor %}
         </ul>
-    </div>
+    </div> -->
 
     <script>
         let inactiveLimit = 10; // Standardwert für Inaktivitätsgrenze

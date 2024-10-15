@@ -144,7 +144,7 @@
         <a href="/">Home</a>
         <a href="/config">Konfiguration</a>
         <a href="/leaderboard">Leaderboard</a>
-        <a href="#autos">Car Details</a>
+        <a href="/help">Hilfe</a>
     </div>
     
     <div id="content">
@@ -178,12 +178,6 @@
                 <button type="submit">Speichern</button>
             </form>
 
-            <form action="{{ url_for('start_stream') }}" method="post">
-                <button type="submit" style="background-color: #28a745;">Stream Starten</button>
-            </form>
-            <form action="{{ url_for('stop_stream') }}" method="post">
-                <button type="submit" style="background-color: #dc3545;">Stream Stoppen</button>
-            </form>
             <form action="{{ url_for('reset_data') }}" method="post">
                 <button type="submit" style="background-color: #ffc107;">Daten Zurücksetzen</button>
             </form>

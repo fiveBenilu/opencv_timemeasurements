@@ -1,8 +1,8 @@
 {
     "inactiveLimit": 10,
-    "alpha": 1.3,
+    "alpha": 1.0,
     "beta": 40,
-    "saturation": 80,
+    "saturation": 50,
     "delay_zeit": 7,
     "strecken_laenge": 120,
     "carColors": [
@@ -13,6 +13,14 @@
         {
             "name": "auto_2",
             "color": "#ed7383"
+        },
+        {
+            "name": "auto_3",
+            "color": "#6a8293"
+        },
+        {
+            "name": "auto_4",
+            "color": "#93969e"
         }
     ]
 }

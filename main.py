@@ -32,7 +32,6 @@ def log_event(event_type, message):
     logger.info(f'[{event_type}] {message}')
 
 # Variablen für Steuerung
-streaming = False
 lock = threading.Lock()
 
 # Kamera einrichten
@@ -137,7 +136,7 @@ def rgb_to_hex(rgb_color):
     return None
 
 def track_cars():
-    global streaming, boundary_box, analysed_frame
+    global boundary_box, analysed_frame
     while True:
         ret, frame = camera.read()
         if not ret:
@@ -158,11 +157,13 @@ def track_cars():
         x, y, w, h = boundary_box
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 5)
 
+        detected_cars = []
+
         for car in config['carColors']:
             auto_id = car['name']
             hsv_color = hex_to_hsv(car['color'])
-            lower_color = np.array([max(hsv_color[0] - 10, 0), 100, 100], dtype=np.uint8)
-            upper_color = np.array([min(hsv_color[0] + 10, 255), 255, 255], dtype=np.uint8)
+            lower_color = np.array([max(int(hsv_color[0]) - 10, 0), 100, 100], dtype=np.uint8)
+            upper_color = np.array([min(int(hsv_color[0]) + 10, 255), 255, 255], dtype=np.uint8)
             mask = cv2.inRange(hsv, lower_color, upper_color)
 
             # Verwende Dilation, um benachbarte kleine Bereiche zu verbinden
@@ -177,6 +178,10 @@ def track_cars():
 
                     # Finde die Bounding Box der zusammengefassten Kontur
                     cx, cy, cw, ch = cv2.boundingRect(contour)
+
+                    # Überprüfen, ob die erkannte Kontur bereits einem anderen Auto zugeordnet wurde
+                    if any((cx, cy, cw, ch) in detected_cars for detected_cars in detected_cars):
+                        continue
 
                     # Auto-Box zeichnen
                     car_color = tuple(int(car['color'][i:i+2], 16) for i in (1, 3, 5))
@@ -195,6 +200,9 @@ def track_cars():
                         # Auto ist nicht mehr in der Boundary Box, entferne es aus der Überwachung
                         autos_in_boundary[auto_id] = False
 
+                    # Füge die erkannte Kontur zur Liste der erkannten Autos hinzu
+                    detected_cars.append((cx, cy, cw, ch))
+
         # Speichere das analysierte Bild in der globalen Variable
         with lock:
             analysed_frame = frame.copy()
@@ -203,21 +211,20 @@ def track_cars():
         time.sleep(0.01)
 
 def gen_frames():
-    global streaming, analysed_frame
+    global analysed_frame
     while True:
-        if streaming:
-            with lock:
-                if analysed_frame is not None:
-                    frame = analysed_frame.copy()
-                else:
-                    continue
+        with lock:
+            if analysed_frame is not None:
+                frame = analysed_frame.copy()
+            else:
+                continue
 
-            # Bild kodieren und als Byte-Stream zurückgeben
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
+        # Bild kodieren und als Byte-Stream zurückgeben
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
         # Kurze Pause, um CPU-Last zu reduzieren
         time.sleep(0.01)
@@ -227,19 +234,9 @@ def gen_frames():
 def index():
     return render_template('index.html', config=config, autos=list(rundenzeiten.keys()))
 
-@app.route('/start')
-def start_stream():
-    global streaming
-    with lock:
-        streaming = True
-    return redirect(url_for('index'))
-
-@app.route('/stop')
-def stop_stream():
-    global streaming
-    with lock:
-        streaming = False
-    return redirect(url_for('index'))
+@app.route('/help')
+def help():
+    return render_template('help.html')
 
 @app.route('/video_feed')
 def video_feed():
@@ -352,5 +349,8 @@ if __name__ == "__main__":
     tracking_thread = threading.Thread(target=track_cars)
     tracking_thread.daemon = True
     tracking_thread.start()
+
+    # Setze den Stream auf immer aktiv
+    streaming = True
 
     app.run(host='0.0.0.0', port=5000, debug=False)
