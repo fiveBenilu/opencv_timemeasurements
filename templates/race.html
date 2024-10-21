@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC Auto Rennen - Rennen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        #video-container {
+            flex-basis: 60%;
+            text-align: center;
+            padding-right: 20px;
+            position: relative;
+        }
+        #video-container img {
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            max-width: 100%;
+            height: auto;
+        }
+        #boundary-box {
+            position: absolute;
+            border: 2px dashed #ffc107;
+            pointer-events: none;
+        }
+        #controls {
+            margin-top: 15px;
+        }
+        #controls form {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        #controls button {
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #controls button:hover {
+            background-color: #218838;
+        }
+        #times-container {
+            flex-basis: 100%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .table-wrapper {
+            margin-bottom: 20px;
+            padding: 0 20px; /* Padding zum Rand hinzufügen */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .inactive {
+            color: #dc3545;
+        }
+        .active {
+            color: #28a745;
+        }
+        .navbar {
+            background-color: white;
+            color: #007bff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .navbar img {
+            height: 70px;
+            margin-right: 40px;
+        }
+        .navbar h1 {
+            color: #2b2b2b;
+            margin: 0;
+            font-size: 24px;
+        }
+        .navbar a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            #content {
+                flex-direction: column;
+                align-items: center;
+            }
+            #video-container {
+                flex-basis: 100%;
+                padding-right: 0;
+            }
+            #times-container {
+                flex-basis: 100%;
+                margin-top: 20px;
+            }
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar img {
+                margin-bottom: 10px;
+            }
+            .navbar h1 {
+                font-size: 20px;
+            }
+            .navbar a {
+                margin-left: 0;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ url_for('static', filename='assets/birkenring_logo.png') }}" alt="birkenring">
+        <h1>Birkenring Zeitmessung (NOT FINAL)</h1>
+        <a href="/">Home</a>
+        <a href="/config">Konfiguration</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="/help">Hilfe</a>
+        <a href="/race">Wurstcup</a>
+    </div>
+    
+    <div id="content">
+        <div id="video-container">
+            <img id="video-feed" src="{{ url_for('video_feed') }}" width="640" height="480" onclick="pickColor(event)">
+            <div id="controls">
+                <button id="start-race" style="background-color: #007bff;">Start</button>
+            </div>
+        </div>
+
+        <div id="times-container">
+            <div class="table-wrapper">
+                <h2>Aktuelle Zeit</h2>
+                <table id="current-time-table">
+                    <thead>
+                        <tr>
+                            <th>Auto</th>
+                            <th>Aktuelle Zeit (Sekunden)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamische Zeilen für aktuelle Zeit -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedColor = null;
+        let raceStarted = false;
+
+        function pickColor(event) {
+            const img = document.getElementById('video-feed');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0, img.width, img.height);
+            const x = event.offsetX;
+            const y = event.offsetY;
+            const pixel = context.getImageData(x, y, 1, 1).data;
+            selectedColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+            alert(`Farbe ausgewählt: ${selectedColor}`);
+        }
+
+        document.getElementById('start-race').addEventListener('click', function() {
+            if (selectedColor) {
+                raceStarted = true;
+                fetch('/start_race', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ color: selectedColor })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Rennen gestartet!');
+                    } else {
+                        alert('Fehler beim Starten des Rennens.');
+                    }
+                });
+            } else {
+                alert('Bitte wählen Sie eine Farbe aus.');
+            }
+        });
+
+        function updateCurrentTime() {
+            if (raceStarted) {
+                fetch('/current_time')
+                    .then(response => response.json())
+                    .then(data => {
+                        const tbody = document.querySelector('#current-time-table tbody');
+                        tbody.innerHTML = '';  // Leere die Tabelle
+                        for (const [auto, time] of Object.entries(data)) {
+                            const row = `<tr><td>${auto}</td><td>${time.toFixed(2)}</td></tr>`;
+                            tbody.innerHTML += row;
+                        }
+                    });
+            }
+        }
+
+        // Alle 2 Sekunden die aktuelle Zeit aktualisieren
+        setInterval(updateCurrentTime, 2000);
+    </script>
+</body>
+</html>

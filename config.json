@@ -8,19 +8,11 @@
     "carColors": [
         {
             "name": "auto_1",
-            "color": "#08ffff"
+            "color": "#b66974"
         },
         {
             "name": "auto_2",
-            "color": "#ed7383"
-        },
-        {
-            "name": "auto_3",
-            "color": "#6a8293"
-        },
-        {
-            "name": "auto_4",
-            "color": "#93969e"
+            "color": "#625756"
         }
     ]
 }
