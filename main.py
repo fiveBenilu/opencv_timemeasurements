@@ -40,7 +40,7 @@ class ConfigManager:
 
 class CameraManager:
     def __init__(self):
-        self.camera = cv2.VideoCapture(0)
+        self.camera = cv2.VideoCapture(1)
         self.camera.set(cv2.CAP_PROP_FPS, 60)
 
     def get_frame(self):
@@ -84,13 +84,43 @@ class RaceManager:
             self.letzte_erfassung[auto_id] = aktuelle_zeit
         return self.rundenzeiten.get(auto_id, None)
 
-class VideoProcessor:
+class BaseVideoProcessor:
     def __init__(self, config, race_manager):
         self.config = config
         self.race_manager = race_manager
         self.lock = threading.Lock()
         self.analysed_frame = None
 
+    def track_cars(self, camera_manager):
+        raise NotImplementedError("Subclasses should implement this method")
+
+    def gen_frames(self):
+        while True:
+            with self.lock:
+                if self.analysed_frame is not None:
+                    frame = self.analysed_frame.copy()
+                else:
+                    continue
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            time.sleep(0.01)
+
+    def gen_web_frames(self):
+        while True:
+            with self.lock:
+                if self.analysed_frame is not None:
+                    frame = self.analysed_frame.copy()
+                else:
+                    continue
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            time.sleep(0.17)  # Reduce frame rate to approximately 10 FPS
+
+class ColorBasedVideoProcessor(BaseVideoProcessor):
     def adjust_image(self, image):
         result = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
         avg_a = np.average(result[:, :, 1])
@@ -160,40 +190,59 @@ class VideoProcessor:
                 self.analysed_frame = frame.copy()
             time.sleep(0.01)
 
-    def gen_frames(self):
+from ultralytics import YOLO
+
+class YoloBasedVideoProcessor(BaseVideoProcessor):
+    def __init__(self, config, race_manager):
+        super().__init__(config, race_manager)
+        self.model = self.load_yolo_model()
+
+    def load_yolo_model(self):
+        return YOLO("yolov8n.pt")  # Oder "yolov8s.pt" für ein größeres Modell
+
+    def track_cars(self, camera_manager):
         while True:
+            frame = camera_manager.get_frame()
+            if frame is None:
+                continue
+
+            results = self.model(frame)[0]  # YOLO-Vorhersagen abrufen
+
+            for det in results.boxes:
+                x1, y1, x2, y2 = map(int, det.xyxy[0])  # Bounding-Box-Koordinaten
+                conf = det.conf[0].item()
+                label = results.names[int(det.cls[0])]
+
+                if conf > 0.5 and label in ["car", "truck", "bus", "motorcycle"]:  # Konfidenzschwelle setzen und nur Fahrzeuge tracken
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    
+                    # Erfassen der Rundenzeit
+                    if label not in self.race_manager.rundenzeiten:
+                        self.race_manager.rundenzeiten[label] = []
+                    rundenzeit = self.race_manager.rundenzeit_erfassen(label)
+                    if rundenzeit and len(rundenzeit) > 0:
+                        letzte_rundenzeit = rundenzeit[-1]
+                        print(f"{label} hat eine Rundenzeit von {letzte_rundenzeit:.2f} Sekunden.")
+
             with self.lock:
-                if self.analysed_frame is not None:
-                    frame = self.analysed_frame.copy()
-                else:
-                    continue
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                self.analysed_frame = frame.copy()
+            
             time.sleep(0.01)
 
-    def gen_web_frames(self):
-        while True:
-            with self.lock:
-                if self.analysed_frame is not None:
-                    frame = self.analysed_frame.copy()
-                else:
-                    continue
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            time.sleep(0.17)  # Reduce frame rate to approximately 10 FPS
-
 class App:
-    def __init__(self):
+    def __init__(self, tracking_type='color'):
         self.app = Flask(__name__)
         self.logger = LoggerSetup()
         self.config_manager = ConfigManager()
         self.camera_manager = CameraManager()
         self.race_manager = RaceManager(self.config_manager.config, self.logger)
-        self.video_processor = VideoProcessor(self.config_manager.config, self.race_manager)
+        tracking_type = self.config_manager.config.get('trackingType', 'color')
+        if tracking_type == 'color':
+            self.video_processor = ColorBasedVideoProcessor(self.config_manager.config, self.race_manager)
+        elif tracking_type == 'yolo':
+            self.video_processor = YoloBasedVideoProcessor(self.config_manager.config, self.race_manager)
         self.setup_routes()
 
     def setup_routes(self):
@@ -208,6 +257,7 @@ class App:
         self.app.add_url_rule('/leaderboard', 'leaderboard', self.leaderboard)
         self.app.add_url_rule('/car/<auto_id>', 'car_details', self.car_details)
         self.app.add_url_rule('/reset_data', 'reset_data', self.reset_data, methods=['POST'])
+        self.app.add_url_rule('/get_best_lap_times', 'get_best_lap_times', self.get_best_lap_times)
 
     def index(self):
         return render_template('index.html', config=self.config_manager.config, autos=list(self.race_manager.rundenzeiten.keys()))
@@ -249,6 +299,7 @@ class App:
             'saturation': int(data.get('saturation', self.config_manager.config.get('saturation', 50))),
             'delay_zeit': int(data.get('delayTime', self.config_manager.config.get('delay_zeit', 10))),
             'strecken_laenge': int(data.get('trackLength', self.config_manager.config.get('strecken_laenge', 120))),
+            'trackingType': data.get('trackingType', self.config_manager.config.get('trackingType', 'color')),
             'carColors': data.get('carColors', self.config_manager.config.get('carColors', []))
         })
         return jsonify(success=True)
@@ -307,5 +358,5 @@ class App:
         self.app.run(host='0.0.0.0', port=5000, debug=False)
 
 if __name__ == "__main__":
-    app = App()
-    app.run()
+    app = App(tracking_type='yolo')  # or 'yolo' for YOLOv8 tracking
+    app.run() 

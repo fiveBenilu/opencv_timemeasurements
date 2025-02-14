@@ -7,12 +7,13 @@
     "strecken_laenge": 120,
     "carColors": [
         {
-            "name": "auto_1",
-            "color": "#b66974"
+            "name": "elenaaarrr",
+            "color": "#38ad93"
         },
         {
             "name": "auto_2",
-            "color": "#625756"
+            "color": "#aa7e75"
         }
-    ]
+    ],
+    "trackingType": "yolo"
 }
